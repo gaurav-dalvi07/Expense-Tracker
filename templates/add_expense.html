@@ -1,0 +1,162 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <title>Add Expense</title>
+  <style>
+    body {
+      font-family: 'Segoe UI', sans-serif;
+      background: url("/static/add.jpg") no-repeat center center fixed;
+      background-size: cover;
+      display: flex;
+      justify-content: center;
+      align-items: center;
+      height: 100vh;
+      margin: 0;
+      animation: fadeIn 0.8s ease;
+    }
+
+    @keyframes fadeIn {
+      from {opacity:0; transform:scale(0.95);}
+      to {opacity:1; transform:scale(1);}
+    }
+
+    .container {
+      background: rgba(255,255,255,0.96);
+      padding: 30px;
+      border-radius: 20px;
+      width: 340px;
+      box-shadow: 0 10px 25px rgba(0,0,0,0.25);
+      transition: transform 0.3s ease;
+    }
+
+    .container:hover {
+      transform: scale(1.03);
+    }
+
+    h2 {
+      text-align: center;
+      margin-bottom: 20px;
+      font-weight: bold;
+      letter-spacing: 1px;
+    }
+
+    label {
+      font-weight: bold;
+      display: block;
+      margin-top: 12px;
+      margin-bottom: 5px;
+    }
+
+    input, select {
+      width: 100%;
+      padding: 11px;
+      border-radius: 20px;
+      border: 1px solid #ccc;
+      height: 42px;
+      box-sizing: border-box;
+      outline: none;
+      font-size: 14px;
+      transition: 0.3s ease;
+    }
+
+    input:focus, select:focus {
+      border-color: #ff5722;
+      box-shadow: 0 0 8px rgba(255,87,34,0.6);
+      transform: scale(1.03);
+    }
+
+    select {
+      appearance: none;
+      background: white url('data:image/svg+xml;utf8,<svg fill="black" height="24" width="24" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><path d="M7 10l5 5 5-5z"/></svg>') no-repeat right 12px center;
+      background-size: 18px;
+      padding-right: 35px;
+    }
+
+    button {
+      margin-top: 20px;
+      width: 100%;
+      background: linear-gradient(45deg, #ff416c, #ff4b2b);
+      color: white;
+      border: none;
+      border-radius: 30px;
+      padding: 12px;
+      font-size: 16px;
+      cursor: pointer;
+      transition: 0.3s ease;
+    }
+
+    button:hover {
+      transform: scale(1.05);
+      box-shadow: 0 10px 20px rgba(255,75,43,0.5);
+    }
+
+    a {
+      display: block;
+      text-align: center;
+      margin-top: 15px;
+      color: #007bff;
+      font-weight: bold;
+      text-decoration: none;
+      transition: 0.2s;
+    }
+
+    a:hover {
+      color: #ff5722;
+      text-decoration: underline;
+    }
+
+    #customCategoryDiv {
+      display: none;
+      margin-top: 5px;
+      animation: slide 0.4s ease;
+    }
+
+    @keyframes slide {
+      from {opacity:0; transform:translateY(-5px);}
+      to {opacity:1; transform:translateY(0);}
+    }
+  </style>
+</head>
+<body>
+
+<div class="container">
+  <h2>Add New Expense</h2>
+
+  <form method="POST" action="/add">
+
+    <label>Amount (₹):</label>
+    <input type="number" name="amount" placeholder="Enter amount" required>
+
+    <label>Category:</label>
+    <select name="category" id="category" onchange="toggleCustomCategory()" required>
+      <option value="Food">Food</option>
+      <option value="Travel">Travel</option>
+      <option value="Shopping">Shopping</option>
+      <option value="Bills">Bills</option>
+      <option value="Other">Other</option>
+    </select>
+
+    <div id="customCategoryDiv">
+      <label>Custom Category:</label>
+      <input type="text" name="custom_category" placeholder="eg: Petrol, Medical">
+    </div>
+
+    <label>Date:</label>
+    <input type="date" name="date" required>
+
+    <button type="submit">Add Expense</button>
+  </form>
+
+  <a href="/dashboard">← Back to Dashboard</a>
+</div>
+
+<script>
+function toggleCustomCategory() {
+  let category = document.getElementById("category").value;
+  document.getElementById("customCategoryDiv").style.display =
+    (category === "Other") ? "block" : "none";
+}
+</script>
+
+</body>
+</html>
