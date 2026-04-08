@@ -1,0 +1,162 @@
+<!DOCTYPE html>
+<html>
+<head>
+<title>Edit Expense</title>
+<link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/css/bootstrap.min.css" rel="stylesheet">
+
+<style>
+body {
+    background: url("/static/edit.jpg") no-repeat center center fixed;
+    background-size: cover;
+    font-family: 'Segoe UI', sans-serif;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    height: 100vh;
+    margin: 0;
+    animation: fadeIn 0.8s ease;
+}
+
+@keyframes fadeIn {
+    from {opacity: 0; transform: scale(0.95);}
+    to {opacity: 1; transform: scale(1);}
+}
+
+.card {
+    background: rgba(255, 255, 255, 0.96);
+    border-radius: 22px;
+    padding: 34px;
+    width: 380px;
+    max-width: 95%;
+    box-shadow: 0 18px 35px rgba(0,0,0,0.3);
+    transition: 0.3s;
+}
+
+.card:hover {
+    transform: scale(1.03);
+}
+
+h4 {
+    text-align: center;
+    font-weight: 700;
+    margin-bottom: 22px;
+    color: #333;
+}
+
+input, select {
+    border-radius: 24px !important;
+    height: 46px;
+    padding-left: 16px;
+    border: 1px solid #ccc;
+    transition: 0.3s;
+}
+
+input:focus, select:focus {
+    border-color: #4caf50;
+    box-shadow: 0 0 12px rgba(76,175,80,0.45);
+}
+
+/* BUTTONS */
+.btn-update {
+    width: 100%;
+    background: linear-gradient(45deg,#6a11cb,#2575fc);
+    color: #fff;
+    border-radius: 32px;
+    padding: 13px;
+    margin-top: 15px;
+    font-weight: bold;
+    transition: 0.3s;
+    border: none;
+}
+
+.btn-update:hover {
+    transform: scale(1.06);
+    box-shadow: 0 12px 22px rgba(0,0,0,0.30);
+}
+
+.btn-cancel {
+    width: 100%;
+    background: linear-gradient(45deg,#00c9a7,#92fe9d);
+    color: #fff;
+    border-radius: 32px;
+    padding: 12px;
+    margin-top: 10px;
+    font-weight: bold;
+    transition: 0.3s;
+    text-decoration: none;
+    display: inline-block;
+}
+
+.btn-cancel:hover {
+    transform: scale(1.05);
+}
+
+/* CUSTOM CATEGORY */
+#customCategoryDiv {
+    display: none;
+    transition: 0.3s;
+}
+</style>
+</head>
+
+<body>
+
+<div class="card">
+    <h4>✏️ Edit Expense</h4>
+
+    <form method="POST">
+
+        <!-- AMOUNT -->
+        <input type="number"
+               class="form-control mb-3"
+               name="amount"
+               placeholder="Enter Amount ₹"
+               value="{{ expense[2] }}"
+               required>
+
+        <!-- CATEGORY DROPDOWN -->
+        <select class="form-control mb-3" name="category" id="category" onchange="toggleCustomCategory()" required>
+            <option value="Food"   {% if expense[3]=="Food" %}selected{% endif %}>🍔 Food</option>
+            <option value="Travel" {% if expense[3]=="Travel" %}selected{% endif %}>🚕 Travel</option>
+            <option value="Shopping" {% if expense[3]=="Shopping" %}selected{% endif %}>🛍 Shopping</option>
+            <option value="Bills" {% if expense[3]=="Bills" %}selected{% endif %}>💡 Bills</option>
+            <option value="Other" {% if expense[3] not in ["Food","Travel","Shopping","Bills"] %}selected{% endif %}>➕ Other</option>
+        </select>
+
+        <!-- CUSTOM CATEGORY -->
+        <div id="customCategoryDiv">
+            <input type="text"
+                   class="form-control mb-3"
+                   name="custom_category"
+                   id="custom_category"
+                   placeholder="Enter Custom Category"
+                   value="{% if expense[3] not in ['Food','Travel','Shopping','Bills'] %}{{ expense[3] }}{% endif %}">
+        </div>
+
+        <!-- DATE -->
+        <input type="date"
+               class="form-control mb-3"
+               name="date"
+               value="{{ expense[4] }}"
+               required>
+
+        <button type="submit" class="btn btn-update">✅ Update Expense</button>
+        <a href="/dashboard" class="btn btn-cancel">↩ Back to Dashboard</a>
+
+    </form>
+</div>
+
+<script>
+function toggleCustomCategory() {
+    let category = document.getElementById("category").value;
+    let customDiv = document.getElementById("customCategoryDiv");
+
+    customDiv.style.display = (category === "Other") ? "block" : "none";
+}
+
+// Run on page load
+toggleCustomCategory();
+</script>
+
+</body>
+</html>

@@ -1,0 +1,314 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<title>Dashboard</title>
+
+<meta name="viewport" content="width=device-width, initial-scale=1">
+
+<link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/css/bootstrap.min.css" rel="stylesheet">
+<script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+
+<script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
+
+<style>
+body{
+    background:#f8f9fa;
+    color:#000;
+    transition:0.3s;
+}
+body.dark{
+    background:#121212;
+    color:#fff;
+}
+
+.dashboard-bg{
+    background:linear-gradient(135deg,#f5f7fa,#c3cfe2);
+    border-radius:16px;
+    padding:15px;
+}
+.dark .dashboard-bg{
+    background:linear-gradient(135deg,#1f1f1f,#0b0b0b);
+}
+
+.dark .card{background:#1e1e1e;color:#fff}
+.dark .table{color:#fff}
+.dark .list-group-item{background:#222;color:#fff}
+.dark .alert{background:#333;border:none}
+
+.dashboard-title{font-weight:bold}
+
+.welcome-box{
+    background:linear-gradient(45deg,#00c6ff,#0072ff);
+    color:white;
+    padding:12px;
+    border-radius:12px;
+    margin-bottom:15px;
+    text-align:center;
+    font-weight:bold;
+}
+
+.budget-box{
+    background:#f8f9fa;
+    border-left:6px solid #0d6efd;
+    padding:12px;
+    border-radius:8px;
+    margin-bottom:15px;
+}
+.dark .budget-box{background:#222}
+
+.budget-progress{
+    width:100%;
+    height:22px;
+    background:#ddd;
+    border-radius:12px;
+    overflow:hidden;
+    margin-top:8px;
+}
+.dark .budget-progress{background:#444}
+
+.budget-fill{height:100%;transition:.5s}
+.budget-green{background:#28a745}
+.budget-yellow{background:#ffc107}
+.budget-red{background:#dc3545}
+
+.chart-box{width:240px;height:240px;margin:auto}
+</style>
+</head>
+
+<body>
+
+<div class="container mt-4 dashboard-bg" id="pdfArea">
+
+{% if welcome %}
+<div class="welcome-box">
+👋 Welcome back, <b>{{ username }}</b>
+</div>
+{% endif %}
+
+{% with messages = get_flashed_messages(with_categories=true) %}
+{% for cat,msg in messages %}
+<div class="alert alert-{{ cat }}">{{ msg }}</div>
+{% endfor %}
+{% endwith %}
+
+<!-- ===== MONTHLY BUDGET ===== -->
+<div class="budget-box">
+
+<div class="d-flex justify-content-between align-items-center flex-wrap">
+
+<form onsubmit="saveBudget();return false;" class="d-flex gap-2 flex-wrap align-items-center">
+<b>💰 Monthly Budget:</b>
+
+<input type="number" id="budgetInput"
+class="form-control w-25"
+value="{{ budget if budget else '' }}"
+{% if budget %}disabled{% endif %}
+required>
+
+<button id="saveBtn" class="btn btn-primary btn-sm"
+{% if budget %}style="display:none"{% endif %}>
+Save
+</button>
+
+{% if budget %}
+<button type="button" class="btn btn-primary btn-sm" onclick="editBudget()">✏ Edit</button>
+{% endif %}
+</form>
+
+<div class="d-flex gap-2 mt-2">
+<button onclick="toggleTheme()" class="btn btn-dark btn-sm">🌙 / ☀</button>
+<a href="/logout" class="btn btn-secondary btn-sm text-white">Logout</a>
+</div>
+
+</div>
+
+{% if budget %}
+<small class="mt-2 d-block">
+Spent: <b>₹ {{ "%.2f"|format(total) }}</b> /
+Budget: <b>₹ {{ "%.2f"|format(budget) }}</b>
+</small>
+
+{% set percent = (total / budget * 100) if budget > 0 else 0 %}
+{% if percent < 75 %}
+{% set bar = "budget-green" %}
+{% elif percent < 100 %}
+{% set bar = "budget-yellow" %}
+{% else %}
+{% set bar = "budget-red" %}
+{% endif %}
+
+<div class="budget-progress">
+<div class="budget-fill {{ bar }}"
+style="width: {{ percent if percent < 100 else 100 }}%"></div>
+</div>
+
+<small>
+Remaining:
+<b>₹ {{ "%.2f"|format(budget - total if budget > total else 0) }}</b>
+</small>
+{% endif %}
+
+</div>
+
+<!-- ===== HEADER ===== -->
+<div class="d-flex justify-content-between mb-3 align-items-center flex-wrap">
+<h4 class="dashboard-title">📊 Expense Dashboard</h4>
+
+<div class="d-flex flex-wrap gap-2 mt-2">
+<a href="/add" class="btn btn-success">✚ Add Expense</a>
+
+<select id="monthSelect" class="btn btn-outline-warning" onchange="filterMonth()">
+<option value="">Overall Expense</option>
+{% for m in monthly_totals.keys() %}
+<option value="{{ m }}" {% if selected_month==m %}selected{% endif %}>{{ m }}</option>
+{% endfor %}
+</select>
+
+<button id="monthClear" class="btn btn-warning text-dark">🗑 Delete Month</button>
+<button id="allClear" class="btn btn-danger text-white">🔥 Clear All</button>
+</div>
+</div>
+
+<div class="card p-3 shadow mb-3 text-center">
+<h6>
+{% if selected_month %}
+    Total {{ selected_month }} Expense
+{% else %}
+    Total Expense
+{% endif %}
+</h6>
+<h3 class="text-success">₹ {{ "%.2f"|format(total) }}</h3>
+</div>
+
+
+<div class="card p-3 shadow mb-3">
+<h6>Monthly Summary</h6>
+<ul class="list-group">
+{% for m,a in monthly_totals.items() %}
+<li class="list-group-item d-flex justify-content-between">
+{{ m }} <b>₹ {{ "%.2f"|format(a) }}</b>
+</li>
+{% endfor %}
+</ul>
+</div>
+
+<div class="card p-3 shadow mb-3">
+<h6>Category Wise</h6>
+<ul class="list-group">
+{% for cat,amt in category_amounts.items() %}
+<li class="list-group-item d-flex justify-content-between">
+{{ cat }} <b>₹ {{ "%.2f"|format(amt) }}</b>
+</li>
+{% endfor %}
+</ul>
+</div>
+
+<div class="card p-3 shadow mb-3 table-responsive">
+<h6>Expenses</h6>
+<table class="table table-bordered table-hover">
+<tr class="table-dark">
+<th>Amount</th><th>Category</th><th>Date</th><th>Action</th>
+</tr>
+{% for e in expenses %}
+<tr>
+<td>₹{{ "%.2f"|format(e["amount"]) }}</td>
+<td>{{ e["category"] }}</td>
+<td>{{ e["date"] }}</td>
+<td>
+<a class="btn btn-warning btn-sm" href="/edit/{{ e['id'] }}">✏ Edit</a>
+<a class="btn btn-danger btn-sm" href="/delete/{{ e['id'] }}">🗑 Delete</a>
+</td>
+</tr>
+{% endfor %}
+</table>
+</div>
+
+<div class="text-center mb-3">
+<button onclick="exportPDF()" class="btn btn-info text-dark">📄 Generate a PDF</button>
+</div>
+
+<div class="card p-3 shadow text-center mb-4">
+<h6>Category Chart</h6>
+<div class="chart-box">
+<canvas id="pieChart"></canvas>
+</div>
+
+<script>
+function toggleTheme(){
+document.body.classList.toggle("dark");
+localStorage.setItem("theme",document.body.classList.contains("dark")?"dark":"light");
+}
+if(localStorage.getItem("theme")=="dark")document.body.classList.add("dark");
+
+function filterMonth(){
+let m = monthSelect.value;
+location = m ? "/dashboard?month="+m : "/dashboard";
+}
+
+/* ✅ EDIT BUDGET FUNCTION (FIX) */
+function editBudget(){
+    const input = document.getElementById("budgetInput");
+    const saveBtn = document.getElementById("saveBtn");
+
+    input.disabled = false;
+    input.focus();
+    saveBtn.style.display = "inline-block";
+}
+
+function saveBudget(){
+let amt=budgetInput.value;
+let m=monthSelect.value || new Date().toISOString().slice(0,7);
+fetch("/set_budget",{method:"POST",headers:{'Content-Type':'application/json'},
+body:JSON.stringify({month:m,amount:amt})}).then(()=>location.reload());
+}
+
+monthClear.onclick=()=>{
+let m=monthSelect.value;
+if(!m)return alert("Select month");
+if(confirm("Delete "+m+" ?"))
+fetch("/clear_month",{method:"POST",headers:{'Content-Type':'application/json'},
+body:JSON.stringify({month:m})}).then(()=>location.reload());
+}
+
+allClear.onclick=()=>{
+if(confirm("Delete ALL?"))
+fetch("/clear_all",{method:"POST"}).then(()=>location.reload());
+}
+
+async function exportPDF(){
+    const { jsPDF } = window.jspdf;
+    const area = document.getElementById("pdfArea");
+
+    const canvas = await html2canvas(area,{ scale:2 });
+    const img = canvas.toDataURL("image/png");
+
+    const pdf = new jsPDF("p","mm","a4");
+    const w = 210;
+    const h = canvas.height * w / canvas.width;
+
+    pdf.addImage(img,"PNG",0,0,w,h);
+
+    // ✅ month-based filename
+    let month = document.getElementById("monthSelect").value;
+    let fileName = month 
+        ? `Expense_Report_${month}.pdf`
+        : `Expense_Report_All.pdf`;
+
+    pdf.save(fileName);
+}
+
+/* PIE */
+const labels={{ category_amounts.keys()|list|tojson }};
+const data={{ category_amounts.values()|list|tojson }};
+if(data.length){
+new Chart(pieChart,{
+type:"pie",
+data:{labels:labels,datasets:[{data:data}]},
+options:{plugins:{legend:{position:"bottom"}}}
+});
+}
+</script>
+
+</body>
+</html>
